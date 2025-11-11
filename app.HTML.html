@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Mobile App — Book & Chat</title>
+<meta name="description" content="Mobile-first single-file app: chapters, announcements, chat.">
+<style>
+  /* ===== Mobile-first base ===== */
+  :root{
+    --bg:#ffffff;
+    --card:#f7f7fb;
+    --text:#111827;
+    --muted:#6b7280;
+    --accent:#0ea5a4;
+    --nav-bg: #ffffff;
+    --shadow: 0 6px 18px rgba(2,6,23,0.08);
+    --nav-height: 64px; /* ensure >=44px touch target */
+    --gap:16px;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    font-size:16px;
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  html,body{
+    height:100%;
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.45;
+  }
+
+  .app {
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    padding-bottom: calc(var(--nav-height) + 12px); /* avoid content under nav */
+  }
+
+  header.app-header {
+    position:sticky;
+    top:0;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px var(--gap);
+    background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
+    backdrop-filter: blur(4px);
+    z-index:10;
+    border-bottom:1px solid rgba(15,23,42,0.04);
+  }
+  header h1 {
+    font-size:1.125rem;
+    margin:0;
+    font-weight:600;
+  }
+  header .spacer{flex:1}
+
+  main.screens {
+    flex:1;
+    display:block;
+    position:relative;
+    overflow:hidden;
+  }
+
+  /* screen panels */
+  .screen {
+    position:absolute;
+    inset:0;
+    padding:12px var(--gap) calc(var(--nav-height) + 20px);
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    transform: translateX(100%);
+    opacity:0;
+    pointer-events:none;
+    transition: transform .28s ease, opacity .22s ease;
+  }
+  .screen.active {
+    transform: translateX(0);
+    opacity:1;
+    pointer-events:auto;
+  }
+  .screen.left {
+    transform: translateX(-100%);
+  }
+
+  /* Lists and cards */
+  .list { display:flex; flex-direction:column; gap:12px; }
+  .card {
+    background:var(--card);
+    border-radius:12px;
+    padding:12px;
+    box-shadow: var(--shadow);
+    min-height:48px;
+  }
+  .chapter-title {
+    font-weight:600;
+    font-size:1rem;
+    margin:0 0 6px 0;
+  }
+  .chapter-preview {
+    color:var(--muted);
+    font-size:.95rem;
+    margin:0;
+  }
+
+  /* Reader overlay */
+  .reader {
+    position:fixed;
+    inset:56px 12px calc(var(--nav-height) + 12px);
+    background:var(--bg);
+    border-radius:12px;
+    box-shadow:0 18px 40px rgba(2,6,23,0.14);
+    z-index:60;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    transform: translateY(12px);
+    opacity:0;
+    pointer-events:none;
+    transition: transform .22s ease, opacity .18s ease;
+  }
+  .reader.open {
+    transform: none;
+    opacity:1;
+    pointer-events:auto;
+  }
+  .reader-header {
+    display:flex;
+    gap:12px;
+    align-items:center;
+    padding:12px;
+    border-bottom:1px solid rgba(15,23,42,0.04);
+    background:linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.4));
+  }
+  .reader .content {
+    padding:12px;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .reader h2{ margin:0 0 8px 0; font-size:1.125rem; }
+  .reader p{ margin:0 0 12px 0; font-size:1rem; color:var(--text); }
+
+  /* Announcements full view (simple modal behaviour) */
+  .modal {
+    position:fixed;
+    inset:12% 4%;
+    background:var(--bg);
+    border-radius:12px;
+    box-shadow:0 40px 90px rgba(2,6,23,0.2);
+    padding:12px;
+    z-index:70;
+    display:flex;
+    flex-direction:column;
+    overflow:auto;
+  }
+
+  /* Chat UI */
+  .chat-container {
+    display:flex;
+    flex-direction:column;
+    height:100%;
+  }
+  .messages {
+    flex:1;
+    overflow:auto;
+    padding-bottom:8px;
+    -webkit-overflow-scrolling:touch;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .message {
+    max-width:78%;
+    padding:8px 10px;
+    border-radius:10px;
+    background:#eef2ff;
+    align-self:flex-start;
+    font-size:.95rem;
+    box-shadow: 0 6px 18px rgba(2,6,23,0.04);
+  }
+  .message.me {
+    background:#dcfce7;
+    align-self:flex-end;
+  }
+  .chat-input {
+    display:flex;
+    gap:8px;
+    align-items:center;
+    padding:8px;
+    border-top:1px solid rgba(15,23,42,0.04);
+    background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.9));
+  }
+  .chat-input input[type="text"]{
+    flex:1;
+    min-height:44px;
+    border-radius:10px;
+    border:1px solid rgba(15,23,42,0.06);
+    padding:10px 12px;
+    font-size:1rem;
+    outline:none;
+  }
+  .btn {
+    min-width:44px;
+    min-height:44px;
+    border-radius:10px;
+    background:var(--accent);
+    color:white;
+    border:0;
+    font-weight:600;
+    padding:8px 12px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .btn.ghost {
+    background:transparent;
+    color:var(--accent);
+    border:1px solid rgba(14,165,164,0.12);
+  }
+
+  /* bottom nav */
+  nav.bottom-nav {
+    position:fixed;
+    left:12px;
+    right:12px;
+    bottom:12px;
+    height:var(--nav-height);
+    background:var(--nav-bg);
+    border-radius:14px;
+    box-shadow: var(--shadow);
+    display:flex;
+    align-items:center;
+    justify-content:space-around;
+    z-index:100;
+    padding:8px;
+    gap:4px;
+  }
+  .nav-item {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
+    font-size:.82rem;
+    color:var(--muted);
+    text-decoration:none;
+    width:64px;
+    height:44px;
+    border-radius:10px;
+    background:transparent;
+    border:0;
+  }
+  .nav-item.active {
+    color:var(--accent);
+    font-weight:700;
+  }
+  .nav-item svg { width:22px; height:22px; display:block; }
+
+  /* accessibility focus */
+  button:focus, a:focus, input:focus {
+    outline:3px solid rgba(14,165,164,0.14);
+    outline-offset:2px;
+  }
+
+  /* small screens tuning */
+  @media (min-width:420px) {
+    :root { --nav-height:72px; }
+  }
+
+  /* dark mode optional - basic */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0b1220;
+      --card:#071226;
+      --text:#e6eef8;
+      --muted:#9fb4c9;
+      --accent:#34d399;
+      --nav-bg:#071226;
+      --shadow: 0 12px 30px rgba(0,0,0,0.6);
+    }
+    body{ background:var(--bg); }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- Header area controlled by JS to show each screen's title -->
+  <header class="app-header" role="banner">
+    <button id="backBtn" class="btn ghost" aria-hidden="true" style="display:none" aria-label="Back">⟵</button>
+    <h1 id="screenTitle">Home</h1>
+    <div class="spacer" aria-hidden="true"></div>
+    <button id="themeToggle" class="btn ghost" aria-label="Toggle theme" title="Toggle theme" style="display:none">🌓</button>
+  </header>
+
+  <!-- Screens container -->
+  <main class="screens" role="main">
+    <!-- Home screen -->
+    <section id="home" class="screen active" aria-labelledby="homeTitle" role="region">
+      <h2 id="homeTitle" style="margin:0 0 4px 0; font-size:1rem">Home</h2>
+
+      <div class="list" id="chaptersList" aria-live="polite">
+        <!-- chapters will be injected -->
+      </div>
+    </section>
+
+    <!-- Announcements screen -->
+    <section id="announcements" class="screen" aria-labelledby="annTitle" role="region">
+      <h2 id="annTitle" style="margin:0 0 4px 0; font-size:1rem">Announcements</h2>
+      <div id="annList" class="list" aria-live="polite"></div>
+    </section>
+
+    <!-- Chat screen -->
+    <section id="chat" class="screen" aria-labelledby="chatTitle" role="region">
+      <div class="chat-container" role="application" aria-label="Chat room">
+        <h2 id="chatTitle" style="margin:0 0 6px 0; font-size:1rem">welcome to chemistry science</h2>
+        <div id="messages" class="messages" aria-live="polite" aria-relevant="additions"></div>
+
+        <div class="chat-input" id="chatInputRow">
+          <input id="chatInput" type="text" placeholder="Type a message..." aria-label="Message input" />
+          <button id="sendBtn" class="btn" aria-label="Send message">Send</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Reader overlay for chapter content -->
+  <div id="reader" class="reader" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="reader-header">
+      <button id="readerBack" class="btn ghost" aria-label="Back to chapters">Back</button>
+      <div style="flex:1">
+        <div id="readerTitle" style="font-weight:700"></div>
+        <div id="readerSubtitle" style="color:var(--muted); font-size:.9rem"></div>
+      </div>
+    </div>
+    <div id="readerContent" class="content" tabindex="0" aria-label="Chapter content">
+      <!-- content injected -->
+    </div>
+  </div>
+
+  <!-- bottom nav -->
+  <nav class="bottom-nav" role="navigation" aria-label="Primary">
+    <button class="nav-item active" data-screen="home" id="navHome" aria-label="Home">
+      <!-- home svg -->
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5L12 4l9 7.5"></path><path d="M5 12v7a1 1 0 0 0 1 1h3v-5h6v5h3a1 1 0 0 0 1-1v-7"></path></svg>
+      <span>Home</span>
+    </button>
+
+    <button class="nav-item" data-screen="announcements" id="navAnnouncements" aria-label="Announcements">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0v4L4 16v1h16v-1l-2-4V8"></path></svg>
+      <span>Announcements</span>
+    </button>
+
+    <button class="nav-item" data-screen="chat" id="navChat" aria-label="Chat">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      <span>Chat</span>
+    </button>
+  </nav>
+</div>
+
+<script>
+/*
+  Single-file mobile-first app script
+  Features implemented:
+  - Bottom nav with 3 screens: Home (chapters), Announcements, Chat
+  - Chapter reader with per-chapter scroll restore (localStorage)
+  - Announcements list and expand view
+  - Chat: local-only messages stored in localStorage
+  - Accessible focus management and keyboard support
+  - Basic handling for mobile keyboard (visualViewport)
+*/
+
+/* ---------------------
+   Content data (editable)
+   --------------------- */
+const CONTENT = {
+  chapters: [
+    { id: 1, title: "Chapter 1 — The Beginning", text: "Hello — my name is Mehdi Navaser." },
+    { id: 2, title: "Chapter 2 — The Journey", text: "A short journey into the subject — the story continues." },
+    { id: 3, title: "Chapter 3 — The End", text: "Closing notes and reflections by Mehdi Navaser." }
+  ],
+  announcements: [
+    { id: 1, title: "Welcome", body: "This is the announcements screen. Add announcements here.", ts: new Date().toISOString() }
+  ],
+  chatTitle: "welcome to chemistry science"
+};
+
+/* ---------------------
+   Helper utils
+   --------------------- */
+const qs = s => document.querySelector(s);
+const qsa = s => Array.from(document.querySelectorAll(s));
+const el = (tag, attrs={}, html='') => {
+  const e = document.createElement(tag);
+  for (const k in attrs) {
+    if (k === 'class') e.className = attrs[k];
+    else if (k === 'text') e.textContent = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  if (html) e.innerHTML = html;
+  return e;
+};
+
+/* ---------------------
+   UI references
+   --------------------- */
+const screens = qsa('.screen');
+const navItems = qsa('.nav-item');
+const screenTitle = qs('#screenTitle');
+const backBtn = qs('#backBtn');
+
+const chaptersList = qs('#chaptersList');
+const reader = qs('#reader');
+const readerTitle = qs('#readerTitle');
+const readerSubtitle = qs('#readerSubtitle');
+const readerContent = qs('#readerContent');
+const readerBack = qs('#readerBack');
+
+const annList = qs('#annList');
+
+const messagesEl = qs('#messages');
+const chatInput = qs('#chatInput');
+const sendBtn = qs('#sendBtn');
+const chatTitle = qs('#chatTitle');
+
+/* ---------------------
+   Navigation
+   --------------------- */
+function showScreen(id) {
+  screens.forEach(s => {
+    if (s.id === id) s.classList.add('active');
+    else s.classList.remove('active');
+  });
+  navItems.forEach(n => n.classList.toggle('active', n.dataset.screen === id));
+  screenTitle.textContent = id === 'home' ? 'Home' : (id === 'announcements' ? 'Announcements' : CONTENT.chatTitle);
+  // hide any overlays
+  closeReader();
+  closeModal();
+  // hide back button (reader/back)
+  backBtn.style.display = 'none';
+}
+
+navItems.forEach(btn => {
+  btn.addEventListener('click', () => {
+    showScreen(btn.dataset.screen);
+  });
+});
+
+/* ---------------------
+   Chapters list & reader
+   --------------------- */
+function renderChapters() {
+  chaptersList.innerHTML = '';
+  CONTENT.chapters.forEach(ch => {
+    const card = el('button', {class:'card', 'aria-expanded':'false', 'data-id': ch.id});
+    card.style.textAlign = 'left';
+    const title = el('div', {class:'chapter-title', text: ch.title});
+    const preview = el('p', {class:'chapter-preview', text: ch.text.length > 60 ? ch.text.slice(0,60) + '…' : ch.text});
+    card.appendChild(title);
+    card.appendChild(preview);
+    card.addEventListener('click', () => openChapter(ch.id));
+    chaptersList.appendChild(card);
+  });
+}
+
+function openChapter(id) {
+  const ch = CONTENT.chapters.find(c => c.id === id);
+  if (!ch) return;
+  readerTitle.textContent = ch.title;
+  readerSubtitle.textContent = `Chapter ${ch.id}`;
+  readerContent.innerHTML = ''; // reset
+
+  // content container: we wrap paragraphs for readable spacing
+  const para = el('p');
+  para.textContent = ch.text;
+  readerContent.appendChild(para);
+
+  // show reader
+  reader.classList.add('open');
+  reader.setAttribute('aria-hidden','false');
+  backBtn.style.display = 'inline-flex';
+  // restore scroll position for this chapter
+  const key = `chapter_scroll_${id}`;
+  const saved = localStorage.getItem(key);
+  // allow content to paint before restoring
+  requestAnimationFrame(() => {
+    readerContent.scrollTop = saved ? parseInt(saved,10) : 0;
+    // focus on content for keyboard navigation / screen readers
+    readerContent.focus();
+  });
+
+  // save scroll on leaving or periodically
+  const saveScroll = () => localStorage.setItem(key, String(readerContent.scrollTop || 0));
+  const throttled = throttle(saveScroll, 300);
+  readerContent.addEventListener('scroll', throttled);
+
+  // detach listener when reader closes
+  reader._cleanup = () => {
+    readerContent.removeEventListener('scroll', throttled);
+    saveScroll();
+  };
+}
+
+/* close reader overlay */
+function closeReader() {
+  if (!reader.classList.contains('open')) return;
+  reader.classList.remove('open');
+  reader.setAttribute('aria-hidden','true');
+  if (reader._cleanup) { reader._cleanup(); reader._cleanup = null; }
+  readerContent.innerHTML = '';
+  backBtn.style.display = 'none';
+}
+
+/* back button behaviour (for reader) */
+readerBack.addEventListener('click', closeReader);
+backBtn.addEventListener('click', () => {
+  // if reader is open, close it; otherwise go home
+  if (reader.classList.contains('open')) closeReader();
+  else showScreen('home');
+});
+
+/* ---------------------
+   Announcements
+   --------------------- */
+function renderAnnouncements(){
+  annList.innerHTML = '';
+  CONTENT.announcements.forEach(a => {
+    const card = el('button', {class:'card', 'data-id':a.id, 'aria-expanded':'false'});
+    const title = el('div', {class:'chapter-title', text: a.title});
+    const preview = el('p', {class:'chapter-preview', text: a.body.length > 80 ? a.body.slice(0,80) + '…' : a.body});
+    card.appendChild(title);
+    card.appendChild(preview);
+    card.addEventListener('click', () => openAnnouncement(a.id));
+    annList.appendChild(card);
+  });
+}
+
+let currentModal = null;
+function openAnnouncement(id) {
+  const a = CONTENT.announcements.find(x => x.id === id);
+  if (!a) return;
+  closeModal();
+  const m = el('div', {class:'modal', role:'dialog', 'aria-modal':'true'});
+  const header = el('div', {}, `<strong style="font-size:1.05rem">${a.title}</strong><div style="color:var(--muted); font-size:.9rem; margin-top:4px">${new Date(a.ts).toLocaleString()}</div>`);
+  const body = el('div', {}, `<p style="margin-top:12px; font-size:1rem; color:var(--text)}">${a.body}</p>`);
+  const btn = el('button', {class:'btn ghost', text:'Close', 'aria-label':'Close announcement'});
+  btn.style.alignSelf = 'flex-end';
+  btn.addEventListener('click', closeModal);
+  m.appendChild(header);
+  m.appendChild(body);
+  m.appendChild(btn);
+  document.body.appendChild(m);
+  currentModal = m;
+}
+function closeModal(){
+  if (currentModal) {
+    currentModal.remove();
+    currentModal = null;
+  }
+}
+
+/* ---------------------
+   Chat (localStorage)
+   --------------------- */
+const CHAT_KEY = 'local_chat_messages_v1';
+function loadMessages(){
+  const raw = localStorage.getItem(CHAT_KEY);
+  try {
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch(e){
+    return [];
+  }
+}
+function saveMessages(arr){
+  localStorage.setItem(CHAT_KEY, JSON.stringify(arr));
+}
+function renderMessages(){
+  const arr = loadMessages();
+  messagesEl.innerHTML = '';
+  arr.forEach(m => {
+    const msg = el('div', {class:'message' + (m.me ? ' me' : '' )});
+    msg.textContent = m.text;
+    messagesEl.appendChild(msg);
+  });
+  // scroll to bottom
+  requestAnimationFrame(() => messagesEl.scrollTop = messagesEl.scrollHeight);
+}
+
+function sendMessage(text){
+  if (!text || !text.trim()) return;
+  const arr = loadMessages();
+  arr.push({text: text.trim(), ts: new Date().toISOString(), me: true});
+  saveMessages(arr);
+  renderMessages();
+  chatInput.value = '';
+}
+
+/* send button and enter key */
+sendBtn.addEventListener('click', () => {
+  sendMessage(chatInput.value);
+});
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    sendMessage(chatInput.value);
+  }
+});
+
+/* ---------------------
+   Utilities: throttle
+   --------------------- */
+function throttle(fn, wait){
+  let t = 0, scheduled = null;
+  return function(...args){
+    const now = Date.now();
+    if (now - t >= wait) {
+      t = now;
+      fn.apply(this, args);
+    } else {
+      clearTimeout(scheduled);
+      scheduled = setTimeout(() => { t = Date.now(); fn.apply(this, args); }, wait - (now - t));
+    }
+  };
+}
+
+/* ---------------------
+   Keyboard accessibility: allow left/right to move screens
+   --------------------- */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const order = ['home','announcements','chat'];
+    const current = navItems.find(n => n.classList.contains('active')).dataset.screen;
+    let i = order.indexOf(current);
+    if (e.key === 'ArrowLeft') i = Math.max(0, i - 1); else i = Math.min(order.length - 1, i + 1);
+    showScreen(order[i]);
+  }
+});
+
+/* ---------------------
+   Mobile keyboard handling
+   - Try to keep chat input visible when virtual keyboard appears
+   --------------------- */
+if (window.visualViewport) {
+  const inputRow = qs('#chatInputRow');
+  window.visualViewport.addEventListener('resize', () => {
+    // When keyboard opens, viewport height shrinks; we push the bottom nav up by margin
+    const vh = window.visualViewport.height || window.innerHeight;
+    // compute how much we need to translate the nav to keep input visible
+    // We keep it simple: if chat screen active, scroll messages to bottom
+    if (qs('.nav-item.active').dataset.screen === 'chat') {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+  });
+}
+
+/* ---------------------
+   Init
+   --------------------- */
+function init(){
+  // render pieces
+  renderChapters();
+  renderAnnouncements();
+  chatTitle.textContent = CONTENT.chatTitle;
+
+  // initial messages render
+  renderMessages();
+
+  // default screen
+  showScreen('home');
+
+  // setup click handlers for nav
+  qsa('.nav-item').forEach(n => {
+    n.addEventListener('click', () => {
+      showScreen(n.dataset.screen);
+    });
+  });
+
+  // clicking an announcement in the list (if any) already handled when rendering
+  // allow clicking header back button to behave as "back to home" when not in reader
+  backBtn.addEventListener('click', () => {
+    if (reader.classList.contains('open')) closeReader();
+    else showScreen('home');
+  });
+
+  // reader ESC key close
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (reader.classList.contains('open')) closeReader();
+      else if (currentModal) closeModal();
+    }
+  });
+
+  // focus management: when switching to chat, focus input
+  navItems.forEach(n => {
+    n.addEventListener('click', () => {
+      if (n.dataset.screen === 'chat') setTimeout(() => chatInput.focus(), 200);
+    });
+  });
+
+  // small accessibility: clicking the title returns to top (optional)
+  screenTitle.addEventListener('click', () => {
+    const active = qs('.screen.active .content, .screen.active');
+    if (active) active.scrollTop = 0;
+  });
+}
+
+init();
+
+/* ---------------------
+   Optional features not implemented:
+   - Service worker/offline caching: not registered due to single-file distribution.
+     To add offline caching, serve this file from a web server and register a
+     separate service worker script that caches the HTML and resources.
+--------------------- */
+
+</script>
+</body>
+</html>
