@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>منطیکا - اتاق گفتگو</title>
+    <style>
+        :root {
+            --primary-color: #4f46e5; 
+            --primary-dark: #4338ca;
+            --bg-color: #e5e7eb;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --white: #ffffff;
+            --teacher-bg: #ecfdf5;
+            --teacher-border: #10b981;
+            --danger: #ef4444;
+            --pin-bg: #fff3cd;
+            --pin-text: #856404;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Tahoma, Arial, Helvetica, sans-serif; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg-color);
+            position: fixed; top: 0; bottom: 0; left: 0; right: 0;
+            overflow: hidden; display: flex; flex-direction: column;
+            direction: rtl;
+        }
+
+        /* --- Screens --- */
+        #auth-screen, #chat-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; background: var(--bg-color);
+            z-index: 10; transition: opacity 0.3s ease;
+        }
+        #chat-screen { z-index: 5; opacity: 0; pointer-events: none; }
+        body.logged-in #auth-screen { opacity: 0; pointer-events: none; }
+        body.logged-in #chat-screen { opacity: 1; pointer-events: auto; z-index: 20; background-color: #f3f4f6; }
+
+        /* --- Auth Styles --- */
+        .auth-container { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .auth-card { background: var(--white); padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; position: relative; }
+        .auth-back-btn { position: absolute; top: 20px; right: 20px; text-decoration: none; color: var(--text-muted); font-size: 1.5rem; font-weight: bold; }
+        .auth-logo { font-size: 2.2rem; color: var(--primary-color); font-weight: 900; margin-top: 10px; margin-bottom: 20px; }
+        .auth-btn { width: 100%; padding: 14px; margin-bottom: 15px; border: none; border-radius: 12px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
+        .auth-btn:active { transform: scale(0.97); }
+        .btn-student { background: #f3f4f6; color: var(--text-main); border: 2px solid #e5e7eb; }
+        .btn-teacher { background: var(--primary-color); color: white; }
+        .login-form { display: none; flex-direction: column; gap: 12px; margin-top: 15px; }
+        .login-input { padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; outline: none; text-align: right; -webkit-user-select: auto !important; user-select: auto !important; }
+        .login-input:focus { border-color: var(--primary-color); }
+        .back-link { color: var(--text-muted); font-size: 0.9rem; margin-top: 10px; cursor: pointer; display: none; }
+        #login-error { color: var(--danger); font-size: 0.85rem; font-weight: bold; display: none; margin: 5px 0; line-height: 1.4; }
+
+        /* --- Header --- */
+        .chat-header { background-color: var(--white); padding: 12px 20px; padding-top: max(12px, env(safe-area-inset-top)); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 30; transition: background 0.2s, color 0.2s; position: relative; }
+        .chat-header.selection-mode { background-color: var(--primary-color); color: white; }
+        .chat-header.selection-mode .brand-info, .chat-header.selection-mode .header-actions span { color: white !important; }
+        
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        .back-nav-btn { text-decoration: none; color: var(--primary-color); font-size: 1.5rem; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        
+        .brand-info { display: flex; flex-direction: column; }
+        .brand-name { font-size: 1.3rem; font-weight: 800; color: var(--primary-color); line-height: 1.2; }
+        .online-count { font-size: 0.7rem; color: #10b981; font-weight: bold; display: flex; align-items: center; gap: 4px; }
+        .online-dot { width: 6px; height: 6px; background-color: #10b981; border-radius: 50%; display: inline-block; }
+
+        .header-actions { display: flex; align-items: center; gap: 10px; }
+        .teacher-only { display: none; }
+        body.is-teacher .teacher-only { display: inline-block; }
+        
+        .view-users-btn { background: #e0e7ff; color: var(--primary-color); border: none; padding: 5px 8px; border-radius: 12px; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .online-users-dropdown { display: none; position: absolute; top: 100%; left: 20px; background: white; border-radius: 0 0 12px 12px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); width: 200px; max-height: 300px; overflow-y: auto; z-index: 40; border: 1px solid #eee; border-top: none; }
+        .online-users-dropdown.show { display: flex; flex-direction: column; }
+        .online-user-item { padding: 10px 15px; border-bottom: 1px solid #f3f4f6; font-size: 0.85rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+        .online-user-item:last-child { border-bottom: none; }
+        .user-role-badge { font-size: 0.65rem; padding: 2px 6px; border-radius: 8px; background: #f3f4f6; color: var(--text-muted); }
+        .user-role-badge.teacher { background: #dcfce7; color: #065f46; }
+
+        .mute-btn { background: #fef2f2; color: var(--danger); border: 1px solid var(--danger); padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; cursor: pointer; font-weight: bold; }
+        .action-btn { background: transparent; color: white; border: none; font-size: 1.4rem; cursor: pointer; padding: 0 5px; }
+        .logout-btn { font-size: 0.8rem; color: var(--text-muted); cursor: pointer; border: 1px solid #ccc; padding: 4px 10px; border-radius: 12px; background: white; font-weight: bold; }
+
+        /* --- Pinned Bar --- */
+        .pinned-bar { background-color: var(--pin-bg); color: var(--pin-text); padding: 10px 20px; font-size: 0.85rem; border-bottom: 1px solid #ffeeba; display: none; align-items: center; gap: 10px; z-index: 20; box-shadow: 0 2px 5px rgba(0,0,0,0.03); cursor: pointer; }
+        .pinned-text-content { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+        .unpin-btn { background: transparent; border: none; color: var(--pin-text); font-weight: bold; cursor: pointer; padding: 5px; }
+
+        /* --- Chat Area --- */
+        .chat-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        
+        .msg-wrapper { display: flex; flex-direction: column; max-width: 85%; transition: background 0.2s; position: relative; border-radius: 18px; user-select: none; -webkit-user-select: none; }
+        
+        .msg-row { display: flex; align-items: flex-end; width: 100%; margin-bottom: 4px; }
+        .msg-row.sent { justify-content: flex-start; } 
+        .msg-row.received { justify-content: flex-end; } 
+        
+        .sender-name { font-size: 0.75rem; font-weight: 700; margin-bottom: 4px; margin-right: 4px; margin-left: 4px; color: var(--text-muted); text-align: right; }
+        
+        .msg-bubble { 
+            padding: 10px 14px; border-radius: 18px; font-size: 0.95rem; line-height: 1.5; 
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08); position: relative; text-align: right; direction: rtl; 
+            word-wrap: break-word; overflow-wrap: break-word; white-space: pre-wrap; 
+            display: flex; flex-direction: column;
+        }
+        
+        .msg-text { margin-bottom: 2px; }
+        .msg-time { font-size: 0.65rem; opacity: 0.6; align-self: flex-end; margin-top: 2px; margin-right: -4px; }
+
+        .received .msg-bubble { background-color: var(--white); color: var(--text-main); border-bottom-right-radius: 4px; }
+        .sent .msg-bubble { background-color: var(--primary-color); color: var(--white); border-bottom-left-radius: 4px; }
+        .sent .sender-name { display: none; }
+        
+        .teacher .sender-name { color: #047857; }
+        .teacher .msg-bubble { background-color: var(--teacher-bg); border: 1px solid var(--teacher-border); color: #064e3b !important; }
+
+        .msg-wrapper.selected { background-color: rgba(79, 70, 229, 0.15); padding: 5px; border-radius: 22px; margin: -5px; }
+        .msg-wrapper.selected::after { content: '✓'; position: absolute; bottom: 0; right: -10px; background: var(--primary-color); color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; border: 2px solid white; }
+
+        /* --- Input Area --- */
+        .input-area { background-color: var(--white); padding: 10px 16px; padding-bottom: max(10px, env(safe-area-inset-bottom)); display: flex; gap: 10px; align-items: flex-end; box-shadow: 0 -2px 10px rgba(0,0,0,0.03); z-index: 10; }
+        
+        .chat-input { 
+            flex: 1; background-color: #f3f4f6; border: 1px solid transparent; padding: 12px 16px; border-radius: 20px; 
+            font-size: 16px; outline: none; text-align: right; direction: rtl; resize: none; min-height: 44px; max-height: 120px; line-height: 1.4; overflow-y: auto; transition: border 0.2s;
+            -webkit-user-select: auto !important; user-select: auto !important;
+        }
+        .chat-input:focus { border: 1px solid #d1d5db; background-color: white; }
+
+        .send-btn { background: var(--primary-color); color: var(--white); border: none; width: 44px; height: 44px; border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-shrink: 0; cursor: pointer; margin-bottom: 2px; transition: transform 0.1s; }
+        .send-btn:active { transform: scale(0.9); }
+        .send-btn svg { width: 20px; height: 20px; fill: currentColor; transform: translateX(-2px); }
+        
+        .chat-muted-msg { display: none; flex: 1; text-align: center; color: var(--danger); font-weight: bold; padding: 14px; }
+        body.is-student.chat-is-muted .chat-input, body.is-student.chat-is-muted .send-btn { display: none; }
+        body.is-student.chat-is-muted .chat-muted-msg { display: block; }
+        
+        #connection-status { position: absolute; top: 0; left: 0; width: 100%; background: #f59e0b; color: white; text-align: center; font-size: 0.8rem; padding: 4px; z-index: 50; display: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="connection-status">در حال اتصال به سرور چت...</div>
+
+    <!-- SCREEN 1: Role Selection & Login -->
+    <div id="auth-screen">
+        <div class="auth-container">
+            <div class="auth-card">
+                <a href="index.html" class="auth-back-btn">➔</a>
+                <div class="auth-logo">منطیکا</div>
+                <div id="role-selection">
+                    <p style="margin-bottom: 20px; color: var(--text-muted);">لطفاً نقش خود را مشخص کنید:</p>
+                    <button class="auth-btn btn-student" onclick="showStudentLogin()">👨‍🎓 ورود دانش‌آموز</button>
+                    <button class="auth-btn btn-teacher" onclick="showTeacherLogin()">👨‍🏫 ورود استاد</button>
+                </div>
+                <div id="student-login" class="login-form">
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">نام خود را وارد کنید تا در چت نمایش داده شود:</p>
+                    <input type="text" id="student-name" class="login-input" placeholder="مثال: علی رضایی">
+                    <button class="auth-btn btn-student" onclick="loginStudent()">ورود به کلاس</button>
+                    <span class="back-link" style="display: block;" onclick="hideLogins()">مرحله قبل</span>
+                </div>
+                <div id="teacher-login" class="login-form">
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">نام کاربری و رمز عبور را وارد کنید</p>
+                    <input type="text" id="username" class="login-input" placeholder="نام کاربری" dir="ltr" style="text-align: left;">
+                    <input type="password" id="password" class="login-input" placeholder="رمز عبور" dir="ltr" style="text-align: left;">
+                    <div id="login-error">دسترسی رد شد! نیاز به تلاش بیشتری داری 😉</div>
+                    <button class="auth-btn btn-teacher" onclick="verifyTeacher()">ورود به دفتر اساتید</button>
+                    <span class="back-link" style="display: block;" onclick="hideLogins()">مرحله قبل</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: The Chatroom -->
+    <div id="chat-screen">
+        <header class="chat-header" id="normal-header">
+            <div class="header-right">
+                <a href="index.html" class="back-nav-btn">➔</a>
+                <div class="brand-info">
+                    <div class="brand-name">منطیکا</div>
+                    <div class="online-count"><span class="online-dot"></span> <span id="online-number">۰</span> آنلاین</div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="view-users-btn teacher-only" onclick="toggleUsersList()">👁‍🗨</button>
+                <button class="mute-btn teacher-only" onclick="toggleMute()">🔕 بستن چت</button>
+                <button class="logout-btn" onclick="logout()">خروج</button>
+            </div>
+            <div class="online-users-dropdown" id="online-users-list"></div>
+        </header>
+
+        <header class="chat-header selection-mode" id="selection-header" style="display: none;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;" onclick="cancelSelection()">✖</button>
+                <span id="selection-count" style="font-weight: bold;">۱ پیام</span>
+            </div>
+            <div>
+                <button class="action-btn" id="pin-action-btn" onclick="emitPinMessage()">📌</button>
+                <button class="action-btn" onclick="emitDeleteMessages()">🗑️</button>
+            </div>
+        </header>
+
+        <div id="pinned-bar" class="pinned-bar">
+            <span>📌</span>
+            <div class="pinned-text-content"><strong style="margin-left: 5px;">سنجاق شده:</strong><span id="pinned-text"></span></div>
+            <button class="unpin-btn teacher-only" onclick="emitUnpinMessage()">✖</button>
+        </div>
+
+        <main class="chat-area" id="chat-box"></main>
+
+        <footer class="input-area">
+            <div class="chat-muted-msg">استاد ارسال پیام را موقتاً بسته است 🔒</div>
+            <textarea class="chat-input" placeholder="پیام خود را بنویسید..." id="msg-input" rows="1"></textarea>
+            <button class="send-btn" onclick="sendMessageToServer()">
+                <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
+            </button>
+        </footer>
+    </div>
+
+    <!-- اسکریپت سوکت -->
+    <script src="https://mantika-chat-server.liara.run/socket.io/socket.io.js" defer></script>
+
+    <script>
+        const SERVER_URL = 'https://mantika-chat-server.liara.run'; 
+        let socket = null;
+        let myName = '';
+        let myRole = '';
+
+        function escapeHTML(str) {
+            let div = document.createElement('div');
+            div.innerText = str;
+            return div.innerHTML;
+        }
+
+        function getCurrentTime() {
+            const now = new Date();
+            const h = now.getHours().toString().padStart(2, '0');
+            const m = now.getMinutes().toString().padStart(2, '0');
+            return `${h}:${m}`;
+        }
+
+        function connectToServer() {
+            if (typeof io === 'undefined') {
+                const statusDiv = document.getElementById('connection-status');
+                statusDiv.style.display = 'block';
+                statusDiv.innerText = 'در حال اتصال به سرور داخلی...';
+                statusDiv.style.background = '#f59e0b';
+                setTimeout(connectToServer, 2000);
+                return;
+            }
+            const statusDiv = document.getElementById('connection-status');
+            statusDiv.style.display = 'block';
+            
+            socket = io(SERVER_URL);
+            
+            socket.on('connect', () => { 
+                statusDiv.style.display = 'none'; 
+                socket.emit('user_joined', { name: myName, role: myRole });
+            });
+            
+            socket.on('connect_error', () => {
+                statusDiv.innerText = 'در حال ارتباط با شبکه...';
+                statusDiv.style.background = '#ef4444';
+            });
+            
+            socket.on('receive_message', (msgData) => { 
+                renderMessage(msgData); 
+                scrollToBottom(true); 
+            });
+            
+            socket.on('load_history', (historyArray) => {
+                document.getElementById('chat-box').innerHTML = ''; 
+                historyArray.forEach(msg => renderMessage(msg));
+                scrollToBottom(false); 
+            });
+            
+            socket.on('messages_deleted', (msgIdsArray) => {
+                msgIdsArray.forEach(id => { const el = document.getElementById(id); if (el) el.remove(); });
+            });
+            
+            socket.on('message_pinned', (text) => {
+                document.getElementById('pinned-text').innerText = text; document.getElementById('pinned-bar').style.display = 'flex';
+            });
+            
+            socket.on('message_unpinned', () => {
+                document.getElementById('pinned-bar').style.display = 'none'; document.getElementById('pinned-text').innerText = '';
+            });
+
+            socket.on('online_users_updated', (usersArray) => {
+                document.getElementById('online-number').innerText = usersArray.length;
+                renderOnlineUsersList(usersArray);
+            });
+        }
+
+        function renderOnlineUsersList(users) {
+            const listDiv = document.getElementById('online-users-list');
+            listDiv.innerHTML = '';
+            if(users.length === 0) {
+                listDiv.innerHTML = '<div class="online-user-item">کلاس خالی است</div>';
+                return;
+            }
+            users.forEach(user => {
+                const safeName = escapeHTML(user.name);
+                const roleText = user.role === 'teacher' ? 'استاد' : 'شاگرد';
+                const roleClass = user.role === 'teacher' ? 'teacher' : '';
+                listDiv.innerHTML += `
+                    <div class="online-user-item">
+                        <span class="online-dot"></span>
+                        <span style="flex: 1; text-align: right;">${safeName}</span>
+                        <span class="user-role-badge ${roleClass}">${roleText}</span>
+                    </div>
+                `;
+            });
+        }
+
+        function toggleUsersList() {
+            const listDiv = document.getElementById('online-users-list');
+            listDiv.classList.toggle('show');
+        }
+
+        document.addEventListener('click', function(event) {
+            const listDiv = document.getElementById('online-users-list');
+            const btn = document.querySelector('.view-users-btn');
+            if(listDiv && listDiv.classList.contains('show') && !listDiv.contains(event.target) && event.target !== btn) {
+                listDiv.classList.remove('show');
+            }
+        });
+
+        // ================== AUTH ==================
+        document.addEventListener("DOMContentLoaded", () => {
+            const savedRole = localStorage.getItem("mantika_role");
+            const savedName = localStorage.getItem("mantika_name");
+            if (savedRole && savedName) { myName = savedName; myRole = savedRole; applyRole(); }
+            
+            // 🟢 FIX FOR CURSOR JUMP BUG 🟢
+            const tx = document.getElementById('msg-input');
+            if(tx) {
+                tx.addEventListener("input", function() {
+                    // 1. ذخیره موقعیت نشانگر (Cursor) قبل از تغییر سایز
+                    const cursorStart = this.selectionStart;
+                    const cursorEnd = this.selectionEnd;
+                    
+                    // 2. تغییر سایز
+                    this.style.height = 'auto'; 
+                    this.style.height = (this.scrollHeight) + 'px'; 
+                    
+                    // 3. بازگرداندن نشانگر دقیقاً به همان جای قبلی
+                    this.setSelectionRange(cursorStart, cursorEnd);
+                });
+            }
+        });
+
+        function showStudentLogin() { document.getElementById('role-selection').style.display = 'none'; document.getElementById('student-login').style.display = 'flex'; }
+        function showTeacherLogin() { document.getElementById('role-selection').style.display = 'none'; document.getElementById('teacher-login').style.display = 'flex'; document.getElementById('login-error').style.display = 'none'; }
+        function hideLogins() { document.getElementById('student-login').style.display = 'none'; document.getElementById('teacher-login').style.display = 'none'; document.getElementById('role-selection').style.display = 'block'; }
+
+        function loginStudent() {
+            const nameInput = document.getElementById('student-name').value.trim();
+            if(!nameInput) return alert('لطفاً نام خود را وارد کنید');
+            if(nameInput.includes('استاد') || nameInput.includes('مدیر')) return alert('استفاده از این نام مجاز نیست.');
+            
+            myName = escapeHTML(nameInput); 
+            myRole = 'student'; saveAndLogin();
+        }
+
+        function verifyTeacher() {
+            const user = document.getElementById('username').value.trim().toLowerCase();
+            const pass = document.getElementById('password').value.trim().toLowerCase();
+            const errorMsg = document.getElementById('login-error');
+            if (user === 'kourosh' && pass === 'pasargad') {
+                errorMsg.style.display = 'none'; myName = 'استاد (مدیر)'; myRole = 'teacher'; saveAndLogin();
+            } else { errorMsg.style.display = 'block'; }
+        }
+
+        function saveAndLogin() { localStorage.setItem("mantika_role", myRole); localStorage.setItem("mantika_name", myName); applyRole(); }
+
+        function applyRole() {
+            document.body.className = myRole === 'teacher' ? 'logged-in is-teacher' : 'logged-in is-student';
+            if (isMuted) document.body.classList.add('chat-is-muted');
+            if(!socket) connectToServer();
+            setupLongPressLogic();
+        }
+
+        function logout() {
+            localStorage.removeItem("mantika_role"); localStorage.removeItem("mantika_name");
+            document.body.className = ''; if(socket) socket.disconnect(); socket = null; hideLogins();
+        }
+
+        // ================== MESSAGING ==================
+        function sendMessageToServer() {
+            if (!socket || !socket.connected) { alert('در حال ارتباط با سرور. لطفاً کمی صبر کنید...'); return; }
+            const input = document.getElementById('msg-input');
+            const rawText = input.value.trim();
+            if(!rawText) return;
+
+            const uniqueId = 'msg-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
+
+            const msgData = { 
+                id: uniqueId, 
+                text: rawText, 
+                senderName: myName, 
+                role: myRole, 
+                socketId: socket.id,
+                time: getCurrentTime() 
+            };
+            
+            socket.emit('send_message', msgData);
+            
+            input.value = '';
+            input.style.height = 'auto'; 
+        }
+
+        function renderMessage(msgData) {
+            const isMe = socket && (msgData.socketId === socket.id);
+            const rowClass = isMe ? 'sent' : 'received';
+            const roleClass = (msgData.role === 'teacher') ? 'teacher' : '';
+            
+            const safeText = escapeHTML(msgData.text);
+            const safeName = escapeHTML(msgData.senderName);
+            const msgTime = msgData.time || '';
+
+            const newMsgHtml = `
+            <div class="msg-row ${rowClass}" id="${msgData.id}">
+                <div class="msg-wrapper ${roleClass}" oncontextmenu="return false;">
+                    <div class="sender-name">${safeName}</div>
+                    <div class="msg-bubble">
+                        <div class="msg-text">${safeText}</div>
+                        <span class="msg-time">${msgTime}</span>
+                    </div>
+                </div>
+            </div>`;
+            
+            document.getElementById('chat-box').insertAdjacentHTML('beforeend', newMsgHtml);
+            setupLongPressLogic(); 
+        }
+
+        document.getElementById('msg-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) { 
+                e.preventDefault(); 
+                sendMessageToServer(); 
+            }
+        });
+
+        function scrollToBottom(smooth = false) {
+            const chatBox = document.getElementById('chat-box'); 
+            chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+        }
+
+        // ================== TEACHER ACTIONS ==================
+        let isMuted = false;
+        function toggleMute() {
+            isMuted = !isMuted; const muteBtn = document.querySelector('.mute-btn');
+            if (isMuted) { document.body.classList.add('chat-is-muted'); muteBtn.innerHTML = '🔔 باز کردن چت'; muteBtn.style.background = '#dcfce7'; muteBtn.style.color = '#16a34a'; } 
+            else { document.body.classList.remove('chat-is-muted'); muteBtn.innerHTML = '🔕 بستن چت'; muteBtn.style.background = '#fef2f2'; muteBtn.style.color = '#ef4444'; }
+        }
+
+        function emitDeleteMessages() {
+            if (!socket) return; const idsToDelete = Array.from(selectedMessages);
+            socket.emit('delete_messages', idsToDelete); cancelSelection();
+        }
+
+        function emitPinMessage() {
+            if (!socket || selectedMessages.size !== 1) return;
+            const msgId = Array.from(selectedMessages)[0];
+            const msgTextDiv = document.querySelector(`#${msgId} .msg-text`);
+            if(msgTextDiv) socket.emit('pin_message', msgTextDiv.innerText); cancelSelection();
+        }
+
+        function emitUnpinMessage() { if (socket) socket.emit('unpin_message'); }
+
+        document.getElementById('pinned-bar').addEventListener('click', function(e) {
+            if(!e.target.classList.contains('unpin-btn')) scrollToBottom(true);
+        });
+
+        // ================== LONG PRESS UI ==================
+        let isSelectionMode = false; let selectedMessages = new Set(); let pressTimer;
+
+        function setupLongPressLogic() {
+            const messages = document.querySelectorAll('.msg-wrapper'); const isTeacher = document.body.classList.contains('is-teacher');
+            messages.forEach(msg => msg.replaceWith(msg.cloneNode(true)));
+            document.querySelectorAll('.msg-wrapper').forEach(msg => {
+                msg.addEventListener('click', (e) => { 
+                    if (isTeacher && isSelectionMode) { e.preventDefault(); toggleMessageSelection(msg); }
+                });
+                msg.addEventListener('touchstart', (e) => {
+                    if (!isTeacher) return; 
+                    pressTimer = setTimeout(() => { if (!isSelectionMode) { startSelectionMode(msg); if(navigator.vibrate) navigator.vibrate(50); } }, 500);
+                });
+                msg.addEventListener('touchend', cancelTimer); msg.addEventListener('touchmove', cancelTimer);
+                msg.addEventListener('mousedown', () => {
+                    if (!isTeacher) return; pressTimer = setTimeout(() => { if (!isSelectionMode) startSelectionMode(msg); }, 500);
+                });
+                msg.addEventListener('mouseup', cancelTimer); msg.addEventListener('mouseleave', cancelTimer);
+            });
+        }
+
+        function cancelTimer() { clearTimeout(pressTimer); }
+
+        function startSelectionMode(firstMsg) {
+            isSelectionMode = true; document.getElementById('normal-header').style.display = 'none'; document.getElementById('selection-header').style.display = 'flex'; toggleMessageSelection(firstMsg);
+        }
+
+        function toggleMessageSelection(msg) {
+            const msgId = msg.parentElement.id;
+            if (selectedMessages.has(msgId)) { selectedMessages.delete(msgId); msg.classList.remove('selected'); } 
+            else { selectedMessages.add(msgId); msg.classList.add('selected'); }
+            if (selectedMessages.size === 0) cancelSelection();
+            else { document.getElementById('selection-count').innerText = `${selectedMessages.size} پیام`; document.getElementById('pin-action-btn').style.display = (selectedMessages.size === 1) ? 'inline-block' : 'none'; }
+        }
+
+        function cancelSelection() {
+            isSelectionMode = false; selectedMessages.clear(); document.getElementById('normal-header').style.display = 'flex'; document.getElementById('selection-header').style.display = 'none';
+            document.querySelectorAll('.msg-wrapper.selected').forEach(el => el.classList.remove('selected'));
+        }
+    </script>
+</body>
+</html>
