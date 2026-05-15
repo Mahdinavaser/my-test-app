@@ -54,7 +54,7 @@
         #login-error { color: var(--danger); font-size: 0.85rem; font-weight: bold; display: none; margin: 5px 0; line-height: 1.4; }
 
         /* --- Header --- */
-        .chat-header { background-color: var(--white); padding: 12px 20px; padding-top: max(12px, env(safe-area-inset-top)); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 30; transition: background 0.2s, color 0.2s; position: relative; }
+        .chat-header { background-color: var(--white); padding: 12px 20px; padding-top: max(12px, env(safe-area-inset-top)); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .chat-header.selection-mode { background-color: var(--primary-color); color: white; }
         .chat-header.selection-mode .brand-info, .chat-header.selection-mode .header-actions span { color: white !important; }
         
@@ -71,7 +71,7 @@
         body.is-teacher .teacher-only { display: inline-block; }
         
         .view-users-btn { background: #e0e7ff; color: var(--primary-color); border: none; padding: 5px 8px; border-radius: 12px; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .online-users-dropdown { display: none; position: absolute; top: 100%; left: 20px; background: white; border-radius: 0 0 12px 12px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); width: 200px; max-height: 300px; overflow-y: auto; z-index: 40; border: 1px solid #eee; border-top: none; }
+        .online-users-dropdown { display: none; position: absolute; top: 100%; left: 20px; background: white; border-radius: 0 0 12px 12px; box-shadow: 0 10px 15px rgba(0,0,0,0.1); width: 200px; max-height: 300px; overflow-y: auto; z-index: 100; }
         .online-users-dropdown.show { display: flex; flex-direction: column; }
         .online-user-item { padding: 10px 15px; border-bottom: 1px solid #f3f4f6; font-size: 0.85rem; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
         .online-user-item:last-child { border-bottom: none; }
@@ -79,11 +79,12 @@
         .user-role-badge.teacher { background: #dcfce7; color: #065f46; }
 
         .mute-btn { background: #fef2f2; color: var(--danger); border: 1px solid var(--danger); padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; cursor: pointer; font-weight: bold; }
+        .change-password-btn { background: #e0e7ff; color: var(--primary-color); border: none; padding: 4px 10px; border-radius: 15px; font-size: 0.8rem; cursor: pointer; font-weight: bold; }
         .action-btn { background: transparent; color: white; border: none; font-size: 1.4rem; cursor: pointer; padding: 0 5px; }
         .logout-btn { font-size: 0.8rem; color: var(--text-muted); cursor: pointer; border: 1px solid #ccc; padding: 4px 10px; border-radius: 12px; background: white; font-weight: bold; }
 
         /* --- Pinned Bar --- */
-        .pinned-bar { background-color: var(--pin-bg); color: var(--pin-text); padding: 10px 20px; font-size: 0.85rem; border-bottom: 1px solid #ffeeba; display: none; align-items: center; gap: 10px; z-index: 20; box-shadow: 0 2px 5px rgba(0,0,0,0.03); cursor: pointer; }
+        .pinned-bar { background-color: var(--pin-bg); color: var(--pin-text); padding: 10px 20px; font-size: 0.85rem; border-bottom: 1px solid #ffeeba; display: none; align-items: center; gap: 10px; }
         .pinned-text-content { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
         .unpin-btn { background: transparent; border: none; color: var(--pin-text); font-weight: bold; cursor: pointer; padding: 5px; }
 
@@ -116,19 +117,19 @@
         .teacher .msg-bubble { background-color: var(--teacher-bg); border: 1px solid var(--teacher-border); color: #064e3b !important; }
 
         .msg-wrapper.selected { background-color: rgba(79, 70, 229, 0.15); padding: 5px; border-radius: 22px; margin: -5px; }
-        .msg-wrapper.selected::after { content: '✓'; position: absolute; bottom: 0; right: -10px; background: var(--primary-color); color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; border: 2px solid white; }
+        .msg-wrapper.selected::after { content: '✓'; position: absolute; bottom: 0; right: -10px; background: var(--primary-color); color: white; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; }
 
         /* --- Input Area --- */
-        .input-area { background-color: var(--white); padding: 10px 16px; padding-bottom: max(10px, env(safe-area-inset-bottom)); display: flex; gap: 10px; align-items: flex-end; box-shadow: 0 -2px 10px rgba(0,0,0,0.03); z-index: 10; }
+        .input-area { background-color: var(--white); padding: 10px 16px; padding-bottom: max(10px, env(safe-area-inset-bottom)); display: flex; gap: 10px; align-items: flex-end; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
         
         .chat-input { 
             flex: 1; background-color: #f3f4f6; border: 1px solid transparent; padding: 12px 16px; border-radius: 20px; 
             font-size: 16px; outline: none; text-align: right; direction: rtl; resize: none; min-height: 44px; max-height: 120px; line-height: 1.4; overflow-y: auto; transition: border 0.2s;
-            -webkit-user-select: auto !important; user-select: auto !important;
+            -webkit-user-select: auto !important; user-select: auto !important; -webkit-appearance: none; appearance: none;
         }
         .chat-input:focus { border: 1px solid #d1d5db; background-color: white; }
 
-        .send-btn { background: var(--primary-color); color: var(--white); border: none; width: 44px; height: 44px; border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-shrink: 0; cursor: pointer; margin-bottom: 2px; transition: transform 0.1s; }
+        .send-btn { background: var(--primary-color); color: var(--white); border: none; width: 44px; height: 44px; border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-shrink: 0; cursor: pointer; transition: transform 0.1s; }
         .send-btn:active { transform: scale(0.9); }
         .send-btn svg { width: 20px; height: 20px; fill: currentColor; transform: translateX(-2px); }
         
@@ -137,6 +138,20 @@
         body.is-student.chat-is-muted .chat-muted-msg { display: block; }
         
         #connection-status { position: absolute; top: 0; left: 0; width: 100%; background: #f59e0b; color: white; text-align: center; font-size: 0.8rem; padding: 4px; z-index: 50; display: none; font-weight: bold; }
+
+        /* --- Modal Styles --- */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; }
+        .modal.show { display: flex; }
+        .modal-content { background: var(--white); padding: 25px; border-radius: 16px; max-width: 350px; width: 90%; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .modal-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 15px; color: var(--text-main); }
+        .modal-input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; outline: none; text-align: right; margin-bottom: 12px; -webkit-user-select: auto !important; user-select: auto !important; }
+        .modal-input:focus { border-color: var(--primary-color); }
+        .modal-buttons { display: flex; gap: 10px; }
+        .modal-btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: bold; cursor: pointer; transition: transform 0.1s; }
+        .modal-btn:active { transform: scale(0.97); }
+        .modal-btn-confirm { background: var(--primary-color); color: white; }
+        .modal-btn-cancel { background: #f3f4f6; color: var(--text-main); }
+        .modal-error { color: var(--danger); font-size: 0.85rem; margin-bottom: 10px; display: none; }
     </style>
 </head>
 <body>
@@ -184,6 +199,7 @@
             </div>
             <div class="header-actions">
                 <button class="view-users-btn teacher-only" onclick="toggleUsersList()">👁‍🗨</button>
+                <button class="change-password-btn teacher-only" onclick="openChangePasswordModal()">🔐 تغییر رمز</button>
                 <button class="mute-btn teacher-only" onclick="toggleMute()">🔕 بستن چت</button>
                 <button class="logout-btn" onclick="logout()">خروج</button>
             </div>
@@ -218,6 +234,21 @@
         </footer>
     </div>
 
+    <!-- Change Password Modal -->
+    <div id="change-password-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title">تغییر رمز عبور</div>
+            <div class="modal-error" id="modal-error"></div>
+            <input type="password" id="current-password" class="modal-input" placeholder="رمز عبور فعلی" dir="ltr" style="text-align: left;">
+            <input type="password" id="new-password" class="modal-input" placeholder="رمز عبور جدید" dir="ltr" style="text-align: left;">
+            <input type="password" id="confirm-password" class="modal-input" placeholder="تایید رمز عبور جدید" dir="ltr" style="text-align: left;">
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-confirm" onclick="confirmChangePassword()">تغییر</button>
+                <button class="modal-btn modal-btn-cancel" onclick="closeChangePasswordModal()">انصراف</button>
+            </div>
+        </div>
+    </div>
+
     <!-- اسکریپت سوکت -->
     <script src="https://mantika-chat-server.liara.run/socket.io/socket.io.js" defer></script>
 
@@ -226,6 +257,7 @@
         let socket = null;
         let myName = '';
         let myRole = '';
+        let teacherCredentials = { username: 'ahvaz', password: 'logic' };
 
         function escapeHTML(str) {
             let div = document.createElement('div');
@@ -327,33 +359,114 @@
             }
         });
 
+        // ================== CHANGE PASSWORD MODAL ==================
+        function openChangePasswordModal() {
+            document.getElementById('change-password-modal').classList.add('show');
+            document.getElementById('current-password').value = '';
+            document.getElementById('new-password').value = '';
+            document.getElementById('confirm-password').value = '';
+            document.getElementById('modal-error').style.display = 'none';
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('change-password-modal').classList.remove('show');
+        }
+
+        function confirmChangePassword() {
+            const currentPass = document.getElementById('current-password').value;
+            const newPass = document.getElementById('new-password').value;
+            const confirmPass = document.getElementById('confirm-password').value;
+            const errorDiv = document.getElementById('modal-error');
+
+            if (!currentPass) {
+                errorDiv.innerText = 'لطفاً رمز عبور فعلی را وارد کنید';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (currentPass !== teacherCredentials.password) {
+                errorDiv.innerText = 'رمز عبور فعلی نادرست است';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (!newPass) {
+                errorDiv.innerText = 'لطفاً رمز عبور جدید را وارد کنید';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (newPass.length < 3) {
+                errorDiv.innerText = 'رمز عبور باید حداقل 3 کاراکتر باشد';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (newPass !== confirmPass) {
+                errorDiv.innerText = 'رمز عبور جدید و تایید آن مطابقت ندارند';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            teacherCredentials.password = newPass;
+            localStorage.setItem('mantika_teacher_password', newPass);
+            closeChangePasswordModal();
+            alert('رمز عبور با موفقیت تغییر کرد! ✅');
+        }
+
+        document.getElementById('change-password-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeChangePasswordModal();
+            }
+        });
+
         // ================== AUTH ==================
         document.addEventListener("DOMContentLoaded", () => {
             const savedRole = localStorage.getItem("mantika_role");
             const savedName = localStorage.getItem("mantika_name");
             if (savedRole && savedName) { myName = savedName; myRole = savedRole; applyRole(); }
             
-            // 🟢 FIX FOR CURSOR JUMP BUG 🟢
+            const savedPassword = localStorage.getItem('mantika_teacher_password');
+            if (savedPassword) {
+                teacherCredentials.password = savedPassword;
+            }
+            
+            // 🟢 FIX FOR CURSOR JUMP BUG + TEXT SELECTION + PASTE 🟢
             const tx = document.getElementById('msg-input');
             if(tx) {
                 tx.addEventListener("input", function() {
-                    // 1. ذخیره موقعیت نشانگر (Cursor) قبل از تغییر سایز
                     const cursorStart = this.selectionStart;
                     const cursorEnd = this.selectionEnd;
                     
-                    // 2. تغییر سایز
                     this.style.height = 'auto'; 
                     this.style.height = (this.scrollHeight) + 'px'; 
                     
-                    // 3. بازگرداندن نشانگر دقیقاً به همان جای قبلی
                     this.setSelectionRange(cursorStart, cursorEnd);
+                });
+
+                // Allow paste
+                tx.addEventListener('paste', function(e) {
+                    e.preventDefault();
+                    const text = (e.clipboardData || window.clipboardData).getData('text');
+                    const start = this.selectionStart;
+                    const end = this.selectionEnd;
+                    const before = this.value.substring(0, start);
+                    const after = this.value.substring(end);
+                    
+                    this.value = before + text + after;
+                    
+                    setTimeout(() => {
+                        this.selectionStart = this.selectionEnd = start + text.length;
+                        this.style.height = 'auto';
+                        this.style.height = (this.scrollHeight) + 'px';
+                    }, 0);
                 });
             }
         });
 
         function showStudentLogin() { document.getElementById('role-selection').style.display = 'none'; document.getElementById('student-login').style.display = 'flex'; }
         function showTeacherLogin() { document.getElementById('role-selection').style.display = 'none'; document.getElementById('teacher-login').style.display = 'flex'; document.getElementById('login-error').style.display = 'none'; }
-        function hideLogins() { document.getElementById('student-login').style.display = 'none'; document.getElementById('teacher-login').style.display = 'none'; document.getElementById('role-selection').style.display = 'block'; }
+        function hideLogins() { document.getElementById('student-login').style.display = 'none'; document.getElementById('teacher-login').style.display = 'none'; document.getElementById('role-selection').style.display = 'flex'; }
 
         function loginStudent() {
             const nameInput = document.getElementById('student-name').value.trim();
@@ -366,9 +479,9 @@
 
         function verifyTeacher() {
             const user = document.getElementById('username').value.trim().toLowerCase();
-            const pass = document.getElementById('password').value.trim().toLowerCase();
+            const pass = document.getElementById('password').value.trim();
             const errorMsg = document.getElementById('login-error');
-            if (user === 'kourosh' && pass === 'pasargad') {
+            if (user === teacherCredentials.username.toLowerCase() && pass === teacherCredentials.password) {
                 errorMsg.style.display = 'none'; myName = 'استاد (مدیر)'; myRole = 'teacher'; saveAndLogin();
             } else { errorMsg.style.display = 'block'; }
         }
@@ -506,7 +619,7 @@
             if (selectedMessages.has(msgId)) { selectedMessages.delete(msgId); msg.classList.remove('selected'); } 
             else { selectedMessages.add(msgId); msg.classList.add('selected'); }
             if (selectedMessages.size === 0) cancelSelection();
-            else { document.getElementById('selection-count').innerText = `${selectedMessages.size} پیام`; document.getElementById('pin-action-btn').style.display = (selectedMessages.size === 1) ? 'inline-block' : 'none'; }
+            else { document.getElementById('selection-count').innerText = `${selectedMessages.size} پیام`; document.getElementById('pin-action-btn').style.display = (selectedMessages.size === 1) ? 'block' : 'none'; }
         }
 
         function cancelSelection() {
