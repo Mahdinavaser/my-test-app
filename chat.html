@@ -54,7 +54,7 @@
         #login-error { color: var(--danger); font-size: 0.85rem; font-weight: bold; display: none; margin: 5px 0; line-height: 1.4; }
 
         /* --- Header --- */
-        .chat-header { background-color: var(--white); padding: 12px 20px; padding-top: max(12px, env(safe-area-inset-top)); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .chat-header { background-color: var(--white); padding: 12px 20px; padding-top: max(12px, env(safe-area-inset-top)); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative; }
         .chat-header.selection-mode { background-color: var(--primary-color); color: white; }
         .chat-header.selection-mode .brand-info, .chat-header.selection-mode .header-actions span { color: white !important; }
         
@@ -63,7 +63,7 @@
         
         .brand-info { display: flex; flex-direction: column; }
         .brand-name { font-size: 1.3rem; font-weight: 800; color: var(--primary-color); line-height: 1.2; }
-        .online-count { font-size: 0.7rem; color: #10b981; font-weight: bold; display: flex; align-items: center; gap: 4px; }
+        .online-count { font-size: 0.7rem; color: #10b981; font-weight: bold; display: flex; align-items: center; gap: 4px; cursor: pointer; }
         .online-dot { width: 6px; height: 6px; background-color: #10b981; border-radius: 50%; display: inline-block; }
 
         .header-actions { display: flex; align-items: center; gap: 10px; }
@@ -194,11 +194,10 @@
                 <a href="index.html" class="back-nav-btn">➔</a>
                 <div class="brand-info">
                     <div class="brand-name">منطیکا</div>
-                    <div class="online-count"><span class="online-dot"></span> <span id="online-number">۰</span> آنلاین</div>
+                    <div class="online-count" onclick="toggleUsersList()"><span class="online-dot"></span> <span id="online-number">۰</span> آنلاین</div>
                 </div>
             </div>
             <div class="header-actions">
-                <button class="view-users-btn teacher-only" onclick="toggleUsersList()">👁‍🗨</button>
                 <button class="change-password-btn teacher-only" onclick="openChangePasswordModal()">🔐 تغییر رمز</button>
                 <button class="mute-btn teacher-only" onclick="toggleMute()">🔕 بستن چت</button>
                 <button class="logout-btn" onclick="logout()">خروج</button>
@@ -353,8 +352,8 @@
 
         document.addEventListener('click', function(event) {
             const listDiv = document.getElementById('online-users-list');
-            const btn = document.querySelector('.view-users-btn');
-            if(listDiv && listDiv.classList.contains('show') && !listDiv.contains(event.target) && event.target !== btn) {
+            const onlineCount = document.querySelector('.online-count');
+            if(listDiv && listDiv.classList.contains('show') && !listDiv.contains(event.target) && event.target !== onlineCount) {
                 listDiv.classList.remove('show');
             }
         });
@@ -478,10 +477,10 @@
         }
 
         function verifyTeacher() {
-            const user = document.getElementById('username').value.trim().toLowerCase();
+            const user = document.getElementById('username').value.trim();
             const pass = document.getElementById('password').value.trim();
             const errorMsg = document.getElementById('login-error');
-            if (user === teacherCredentials.username.toLowerCase() && pass === teacherCredentials.password) {
+            if (user === teacherCredentials.username && pass === teacherCredentials.password) {
                 errorMsg.style.display = 'none'; myName = 'استاد (مدیر)'; myRole = 'teacher'; saveAndLogin();
             } else { errorMsg.style.display = 'block'; }
         }
